@@ -39,9 +39,18 @@ let
           exec "${fenix.latest.${toolName}}/bin/${toolName}" "$@"
           ;;
         *)
-          # query rustup for externaly installed toolchains
-          toolchain_root="$(readlink -f "$HOME/.rustup/toolchains/$toolchain")"
-          exec "$toolchain_root/bin/${toolName}" "$@"
+          # toolchain can be provided as a direct path or by a name
+          if [ ! -d $toolchain ]; then
+            # if it's not an existing directory, interpret it as a name
+            toolchain="$(readlink -f "$HOME/.rustup/toolchains/$toolchain")"
+          fi
+          if [ -x "$toolchain/bin/${toolName}" ]; then
+            exec "$toolchain/bin/${toolName}" "$@"
+          else
+            # fallback
+            echo "WARN: ${toolName} not found in $toolchain"
+            exec "${fenix.stable.${toolName}}/bin/${toolName}" "$@"
+          fi
           ;;
       esac
     '';
